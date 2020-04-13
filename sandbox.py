@@ -1,5 +1,7 @@
-import argparse
 import pandas as pd
+import statsmodels.api as sm
+from patsy import dmatrices
+import seaborn as sns
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-whitegrid')
 
@@ -33,14 +35,26 @@ dfbhd = dfbhd.dropna()
 
 # Plot
 dfbhd1 = dfbhd.groupby(level='dep').sum()
+y, X = dmatrices('dc ~ hosp', data=dfbhd1, return_type='dataframe')
+mod = sm.OLS(y, X)
+res = mod.fit()
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.set_xlabel('Hospitalisations')
-ax.set_ylabel('Décès')
+sns.regplot(x='hosp', y='dc', data=dfbhd1, ax=ax,
+            marker='.',
+            label='Fit and région à 95% de confiance')
 for index, row in dfbhd1.iterrows():
     x, y = row['hosp'], row['dc']
-    ax.plot(x, y, 'b.')
-    ax.annotate(index, (x, y), textcoords='offset pixels', xytext=(3,3))
+    if index != '13':
+        note = index
+    else:
+        ratio = row['dc']/row['hosp']*100
+        note = f"{index} ({ratio:.1f}% décès)"
+    ax.annotate(note, (x, y), textcoords='offset pixels', xytext=(3,3))
+ax.set_xlabel('Hospitalisations')
+ax.set_ylabel('Décès')
+slope = res.params["hosp"]*100
+ax.set_title(f'Fit: les décès représentent {slope:.1f}% des hospitalisations')
 plt.show()
 
 
