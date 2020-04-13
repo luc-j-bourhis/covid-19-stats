@@ -32,9 +32,9 @@ total_hosp = daily_hosp.cumsum()
 dfbhd = pd.DataFrame({'hosp': total_hosp, 'dc': dfb['dc']})
 dfbhd['dc/hosp'] = dfbhd['dc']/dfbhd['hosp']*100
 dfbhd = dfbhd.dropna()
+dfbhd1 = dfbhd.groupby(level='dep').sum()
 
 # Plot
-dfbhd1 = dfbhd.groupby(level='dep').sum()
 y, X = dmatrices('dc ~ hosp', data=dfbhd1, return_type='dataframe')
 mod = sm.OLS(y, X)
 res = mod.fit()
@@ -55,8 +55,6 @@ ax.set_xlabel('Hospitalisations')
 ax.set_ylabel('Décès')
 slope = res.params["hosp"]*100
 ax.set_title(f'Fit: les décès représentent {slope:.1f}% des hospitalisations')
-plt.show()
-
 
 # Show and that's all folks!
 plt.show()
