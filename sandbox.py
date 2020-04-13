@@ -35,16 +35,22 @@ dfbhd = dfbhd.dropna()
 
 # Plot
 current = dfbhd.groupby('dep').tail(1)
-y, X = dmatrices('dc ~ hosp', data=current, return_type='dataframe')
-mod = sm.OLS(y, X)
+mod = sm.OLS.from_formula(formula='dc ~ hosp', data=current)
 res = mod.fit()
 print(res.summary())
+alpha = 0.01
+pdc13 = res.get_prediction(current.xs('13')).summary_frame(alpha)
+print('\n*** Bouche-du-Rhône (13) ***')
+print(f"Décès prédit entre {pdc13['mean_ci_lower'][0]:.0f} et "
+      f"{pdc13['mean_ci_upper'][0]:.0f}, à {100*(1-alpha):.0f}% de confiance")
 fig = plt.figure()
 ax = fig.add_subplot(111)
+confidence = 99.99
 sns.regplot(ax=ax, data=current,
             x='hosp', y='dc',
+            ci=confidence,
             scatter=False,
-            label='Fit and région à 95% de confiance')
+            label=f'Fit and région à {confidence}% de confiance')
 current.plot(ax=ax,
              x='hosp', y='dc',
              kind='scatter', marker='.')
