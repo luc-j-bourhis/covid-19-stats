@@ -32,24 +32,24 @@ total_hosp = daily_hosp.cumsum()
 dfbhd = pd.DataFrame({'hosp': total_hosp, 'dc': dfb['dc']})
 dfbhd['dc/hosp'] = dfbhd['dc']/dfbhd['hosp']*100
 dfbhd = dfbhd.dropna()
-dfbhd1 = dfbhd.groupby(level='dep').sum()
 
 # Plot
-y, X = dmatrices('dc ~ hosp', data=dfbhd1, return_type='dataframe')
+current = dfbhd.groupby('dep').tail(1)
+y, X = dmatrices('dc ~ hosp', data=current, return_type='dataframe')
 mod = sm.OLS(y, X)
 res = mod.fit()
 fig = plt.figure()
 ax = fig.add_subplot(111)
-sns.regplot(x='hosp', y='dc', data=dfbhd1, ax=ax,
+sns.regplot(x='hosp', y='dc', data=current, ax=ax,
             marker='.',
             label='Fit and région à 95% de confiance')
-for index, row in dfbhd1.iterrows():
+for index, row in current.iterrows():
     x, y = row['hosp'], row['dc']
-    if index != '13':
-        note = index
+    idx = index[0]
+    if idx != '13':
+        note = idx
     else:
-        ratio = row['dc']/row['hosp']*100
-        note = f"{index} ({ratio:.1f}% décès)"
+        note = f"{idx} ({row['dc/hosp']:.1f}% décès)"
     ax.annotate(note, (x, y), textcoords='offset pixels', xytext=(3,3))
 ax.set_xlabel('Hospitalisations')
 ax.set_ylabel('Décès')
