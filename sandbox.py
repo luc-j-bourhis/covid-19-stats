@@ -38,11 +38,16 @@ current = dfbhd.groupby('dep').tail(1)
 y, X = dmatrices('dc ~ hosp', data=current, return_type='dataframe')
 mod = sm.OLS(y, X)
 res = mod.fit()
+print(res.summary())
 fig = plt.figure()
 ax = fig.add_subplot(111)
-sns.regplot(x='hosp', y='dc', data=current, ax=ax,
-            marker='.',
+sns.regplot(ax=ax, data=current,
+            x='hosp', y='dc',
+            scatter=False,
             label='Fit and région à 95% de confiance')
+current.plot(ax=ax,
+             x='hosp', y='dc',
+             kind='scatter', marker='.')
 for index, row in current.iterrows():
     x, y = row['hosp'], row['dc']
     idx = index[0]
@@ -55,6 +60,7 @@ ax.set_xlabel('Hospitalisations')
 ax.set_ylabel('Décès')
 slope = res.params["hosp"]*100
 ax.set_title(f'Fit: les décès représentent {slope:.1f}% des hospitalisations')
+ax.legend()
 
 # Show and that's all folks!
 plt.show()
