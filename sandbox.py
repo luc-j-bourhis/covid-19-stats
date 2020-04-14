@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from patsy import dmatrices
@@ -33,9 +34,22 @@ dfbhd = pd.DataFrame({'hosp': total_hosp, 'dc': dfb['dc']})
 dfbhd['dc/hosp'] = dfbhd['dc']/dfbhd['hosp']*100
 dfbhd = dfbhd.dropna()
 
-# Plot
+# ICU vs hospitalisations
+# We can't compute the cumulated number of patients in ICU because we don't have
+# the number of people leaving ICU every day. So instead fit rea ~ hosp,
+# i.e. daily numbers and store the slope.
+def fit_rea_to_hosp(df):
+    mod = sm.OLS.from_formula('rea ~ hosp', data=df)
+    res = mod.fit()
+    return pd.Series({'rea/hosp':res.params['hosp'],
+                      'esu':res.bse['hosp'],
+                      'R2':res.rsquared})
+dfbhr = dfb.groupby(level='dep').apply(fit_rea_to_hosp)
+dfbhr = dfbhr.sort_values('rea/hosp')
+
+# Plot hospitalisations vs deaths
 current = dfbhd.groupby('dep').tail(1)
-mod = sm.OLS.from_formula(formula='dc ~ hosp', data=current)
+mod = sm.OLS.from_formula('dc ~ hosp', data=current)
 res = mod.fit()
 print(res.summary())
 alpha = 0.01
@@ -51,9 +65,9 @@ sns.regplot(ax=ax, data=current,
             ci=confidence,
             scatter=False,
             label=f'Fit and région à {confidence}% de confiance')
-current.plot(ax=ax,
-             x='hosp', y='dc',
-             kind='scatter', marker='.')
+current.plot.scatter(ax=ax,
+                     x='hosp', y='dc',
+                     marker='.')
 for index, row in current.iterrows():
     x, y = row['hosp'], row['dc']
     idx = index[0]
@@ -67,6 +81,21 @@ ax.set_ylabel('Décès')
 slope = res.params["hosp"]*100
 ax.set_title(f'Fit: les décès représentent {slope:.1f}% des hospitalisations')
 ax.legend()
+
+# Plot ICU vs hospitalisations
+fig = plt.figure()
+ax = fig.add_subplot(111)
+dfbhr['rea/hosp'].plot.bar(
+    ax=ax,
+    yerr=dfbhr['esu'],
+    use_index=True,
+    color=np.where(np.isin(dfbhr.index.values, ('13', '57', '68')), 'r', 'b'))
+for i, p in enumerate(ax.patches):
+    p.set_alpha(dfbhr.iloc[i]['R2'])
+ax.axhline(dfbhr['rea/hosp'].mean(), color='g')
+ax.set_xlabel('Département')
+ax.set_ylabel('Réa / Hospitalisation (chiffres journaliers)')
+ax.grid(axis='x')
 
 # Show and that's all folks!
 plt.show()
