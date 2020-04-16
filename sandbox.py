@@ -25,6 +25,7 @@ meta = pd.read_csv('https://www.data.gouv.fr/fr/datasets/r/'
 # Aggregate by "départements"
 male = df['sexe'] == BOTH_SEX
 dfb = df[male].drop(['sexe'], axis=1).groupby(['dep', 'jour']).sum()
+date = max(dfb.groupby('jour').indices.keys())
 
 # Cumulated hospitalisations and deaths
 daily_rad = dfb['rad'].diff().dropna()
@@ -79,7 +80,8 @@ for index, row in current.iterrows():
 ax.set_xlabel('Hospitalisations')
 ax.set_ylabel('Décès')
 slope = res.params["hosp"]*100
-ax.set_title(f'Fit: les décès représentent {slope:.1f}% des hospitalisations')
+ax.set_title(f'Fit: les décès représentent {slope:.1f}% des hospitalisations'
+             f'\n(cumulées au {date})')
 ax.legend()
 
 # Plot ICU vs hospitalisations
@@ -94,7 +96,10 @@ for i, p in enumerate(ax.patches):
     p.set_alpha(dfbhr.iloc[i]['R2'])
 ax.axhline(dfbhr['rea/hosp'].mean(), color='g')
 ax.set_xlabel('Département')
-ax.set_ylabel('Réa / Hospitalisation (chiffres journaliers)')
+ax.set_ylabel('Réa / Hospitalisation')
+ax.set_title(f"Le ratio est la pente d'une régression linéaire entre les "
+             f"chiffres journaliers des réa et hospitalisations "
+             f"\n(données au {date})")
 ax.grid(axis='x')
 
 # Show and that's all folks!
