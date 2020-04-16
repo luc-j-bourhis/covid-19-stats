@@ -65,7 +65,8 @@ sns.regplot(ax=ax, data=current,
             x='hosp', y='dc',
             ci=confidence,
             scatter=False,
-            label=f'Fit and région à {confidence}% de confiance')
+            label=(f'Fit and région à {confidence}% de confiance '
+                   f'\n($R^2$={res.rsquared:.2f})'))
 current.plot.scatter(ax=ax,
                      x='hosp', y='dc',
                      marker='.')
